@@ -21,10 +21,10 @@
     --mono:"IBM Plex Mono",ui-monospace,monospace;
   }
   *{box-sizing:border-box}
-  html{background:var(--bg)}
+  html{background:var(--bg);overflow-x:hidden}
   body{
     margin:0;background:var(--bg);color:var(--ink);
-    font-family:var(--display);
+    font-family:var(--display);overflow-x:hidden;
   }
 
   #dots{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
@@ -272,50 +272,51 @@
     .panel,.proj{backdrop-filter:none}
 
     /* --- type scales down and tightens --- */
-    h1{font-size:clamp(1.55rem,7.2vw,2.1rem);line-height:1.2;margin:0 0 20px;letter-spacing:-0.015em}
-    .mark{font-size:9.5px;letter-spacing:.26em;margin-bottom:16px;gap:9px}
-    .mark::before,.mark::after{width:18px}
-    .tagline{font-size:.66rem;letter-spacing:.13em;padding:7px 14px;margin-bottom:18px}
-    .descbox{font-size:.79rem;line-height:1.65}
+    h1{font-size:clamp(1.35rem,6.5vw,1.85rem);line-height:1.22;margin:0 0 16px;letter-spacing:-0.015em}
+    .mark{font-size:9px;letter-spacing:.24em;margin-bottom:14px;gap:8px}
+    .mark::before,.mark::after{width:14px}
+    .tagline{font-size:.62rem;letter-spacing:.12em;padding:6px 12px;margin-bottom:14px}
+    .descbox{font-size:.74rem;line-height:1.6}
 
-    .panel{padding:18px 18px;border-radius:3px}
-    .panel::before,.panel::after{width:13px;height:13px}
-    .center::before{height:250px;top:-30px}
+    .panel{padding:14px 16px;border-radius:3px}
+    .panel::before,.panel::after{width:11px;height:11px}
+    .center::before{height:200px;top:-20px;width:110%}
 
-    /* --- hero breathing room --- */
-    .hero{min-height:100svh;padding:64px 0 48px}
-    .center{padding:0 20px}
+    /* --- hero: add side margins so background dots show through --- */
+    .hero{min-height:100svh;padding:50px 0 40px}
+    .center{padding:0 32px;max-width:520px}
 
-    /* --- buttons: full-width, easier to tap --- */
-    .row{gap:10px;margin-top:16px;flex-direction:column;align-items:stretch}
-    a.btn,.navbtn{width:100%;text-align:center;padding:14px 18px;font-size:12px}
+    /* --- buttons: narrower, not full-width --- */
+    .row{gap:8px;margin-top:14px;flex-direction:column;align-items:center}
+    a.btn,.navbtn{width:auto;min-width:200px;text-align:center;padding:12px 24px;font-size:11px}
     .navbtn{border-width:2px;letter-spacing:.08em}
 
-    /* --- portfolio --- */
-    .portfolio{padding:44px 18px 70px}
-    .p-head{margin-bottom:34px}
-    .p-head h2{font-size:1.5rem}
-    .p-head p{font-size:.85rem}
-    .back-row{margin-bottom:26px}
-    .proj{border-radius:8px;margin-bottom:18px}
-    .proj-info{gap:13px}
-    .proj-info h3{font-size:1.02rem}
-    .proj-info .desc{font-size:11.5px;line-height:1.5}
-    .pf .tag{font-size:9px;letter-spacing:.11em}
-    .pf .val{font-size:.8rem;line-height:1.45}
+    /* --- portfolio: narrower cards with visible background on sides --- */
+    .portfolio{padding:40px 28px 60px;max-width:600px}
+    .p-head{margin-bottom:28px}
+    .p-head h2{font-size:1.3rem}
+    .p-head p{font-size:.8rem}
+    .back-row{margin-bottom:22px}
+    .proj{border-radius:6px;margin-bottom:16px}
+    .proj-info{gap:10px;padding:18px 16px}
+    .proj-info h3{font-size:.95rem}
+    .proj-info .desc{font-size:10.5px;line-height:1.5}
+    .pf .tag{font-size:8.5px;letter-spacing:.1em}
+    .pf .val{font-size:.76rem;line-height:1.4}
     .slides{aspect-ratio:16/10}
-    .sdots{bottom:10px}
-    .sdots button{width:7px;height:7px}
+    .sdots{bottom:8px}
+    .sdots button{width:6px;height:6px}
 
-    footer{font-size:9.5px;padding:22px 0 30px}
+    footer{font-size:9px;padding:18px 0 26px}
   }
 
   /* very small phones */
   @media(max-width:380px){
-    h1{font-size:1.4rem}
-    .panel{padding:15px 15px}
-    .portfolio{padding:38px 14px 60px}
-    .proj-info{padding:18px 16px}
+    h1{font-size:1.25rem}
+    .center{padding:0 24px;max-width:480px}
+    .panel{padding:12px 14px}
+    .portfolio{padding:34px 20px 50px}
+    .proj-info{padding:14px 14px}
   }
 </style>
 </head>
@@ -451,7 +452,7 @@
       <div class="proj-info">
         <h3>Edge Detection Pipeline</h3>
         <p class="desc">Real-time object detection across four camera feeds on a Raspberry Pi 5 with a Hailo-8 accelerator, using tiled inference and lightweight tracking.</p>
-        <div class="pf"><span class="tag">ds</span><p class="val">Running continuous detection across four simultaneous streams on one low-power device, fast enough to be useful.</p></div>
+        <div class="pf"><span class="tag">Problem</span><p class="val">Running continuous detection across four simultaneous streams on one low-power device, fast enough to be useful.</p></div>
         <div class="pf"><span class="tag">Why created</span><p class="val">One accelerator shared four streams, and small targets didn't survive naive downscaling — the constraints forced a tiled, two-phase design.</p></div>
         <div class="pf"><span class="tag">Where used now</span><p class="val">[Fill in: test rig, ongoing personal project, etc.]</p></div>
       </div>
@@ -480,7 +481,7 @@
   var W=0,H=0,DPR=1,dots=[],raf=null;
   var pointer={x:-9999,y:-9999,active:false};
   var GAP=20;         // fallback/starting spacing, recomputed in size() from TARGET_DOTS
-  var TARGET_DOTS=IS_MOBILE ? 1538 : 2800; // dots visible at once
+  var TARGET_DOTS=IS_MOBILE ? 1200 : 2000; // dots visible at once
   var GAP_MIN=18, GAP_MAX=62;
   var PUSH=84;       // base radius — the innermost, strongest band
   // Concentric bands measured in multiples of PUSH.
@@ -505,7 +506,7 @@
 
   var t=0;
   var RING_LIFE=600;       // frames a wave lives (~10s at 60fps)
-  var RING_BAND=108;       // thickness of the lit band (35% wider)
+  var RING_BAND=60;        // thickness of the lit band
   var RING_SPEED=1.4;      // px per frame the ring expands (recomputed in size())
   var rings=[];             // {x,y,life}
   var lastSpawn=-RING_LIFE;
