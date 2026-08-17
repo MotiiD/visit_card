@@ -226,11 +226,21 @@
   .proj{
     background:rgba(16,19,23,.94);border:1px solid var(--rule);border-radius:6px;
     overflow:hidden;margin-bottom:26px;
+    /* skip layout+paint entirely for cards that are off-screen.
+       contain-intrinsic-size reserves the right height so the scrollbar
+       doesn't jump as cards enter the viewport. */
+    content-visibility:auto;
+    contain-intrinsic-size:auto 420px;
   }
   .proj-grid{display:grid;grid-template-columns:1fr 1fr}
   @media(max-width:760px){.proj-grid{grid-template-columns:1fr}}
 
-  .slides{position:relative;aspect-ratio:4/3;background:#0D1013;overflow:hidden;cursor:pointer}
+  .slides{
+    position:relative;aspect-ratio:4/3;background:#0D1013;overflow:hidden;cursor:pointer;
+    /* isolate this subtree: an image finishing its load can't invalidate
+       layout or paint outside this box */
+    contain:layout paint;
+  }
   .slide{
     position:absolute;inset:0;opacity:0;transition:opacity .5s ease;
     display:flex;align-items:center;justify-content:center;
@@ -466,259 +476,336 @@
   <div class="lb-count" id="lb-count"></div>
 </div>
 
-<script>
-(function(){
-  var cv = document.getElementById('dots');
-  var ctx = cv.getContext('2d', {alpha:true});
-  var IS_MOBILE = matchMedia('(pointer: coarse)').matches || window.innerWidth < 760;
-  var W=0,H=0,DPR=1,dots=[],raf=null;
-  var pointer={x:-9999,y:-9999,active:false};
+<!-- ===== dot-field renderer =====
+     The render loop is defined once as a string so the exact same code can run
+     either inside a Web Worker (via OffscreenCanvas) or on the main thread as a
+     fallback. In the worker it is immune to main-thread work: image decoding,
+     view switching and layout can no longer stall the animation. -->
+<script id="dots-renderer" type="text/js-worker">
+var ctx=null, IS_MOBILE=false;
+var W=0,VH=0,H=0,DPR=1,dots=[],cols=0,rows=0,offX=0,offY=0,GAP=25;
+var pointer={x:-9999,y:-9999,active:false}, scrollX=0, scrollY=0;
+var running=false;
 
-  var GAP=25;
-  var TARGET_DOTS=IS_MOBILE ? 1538 : 3400;
-  var GAP_MIN=26, GAP_MAX=62;
+var TARGET_DOTS=3400, GAP_MIN=26, GAP_MAX=62;
+var PUSH=52;
+var PUSH_BANDS=[[1.0,0.60],[1.1,0.40],[1.4,0.20],[1.6,0.15]];
+var PUSH_MAX=PUSH*1.6;
+var CURSOR_LIGHT=140;
+var REACH_MAX=Math.max(CURSOR_LIGHT,PUSH_MAX);
+var EASE_OUT=0.30, EASE_BACK=0.09;
+var ACCENT=[16,206,41];
+var BASE_R=2.47, BASE_ALPHA=0.125, HOT_ALPHA=1.45;
 
-  var PUSH=52;
-  var PUSH_BANDS=[
-    [1.0, 0.60],
-    [1.1, 0.40],
-    [1.4, 0.20],
-    [1.6, 0.15]
-  ];
-  var PUSH_MAX=PUSH*1.6;
-  var CURSOR_LIGHT=140;
-  var REACH_MAX=Math.max(CURSOR_LIGHT, PUSH_MAX);
+var t=0;
+var RING_LIFE=600, RING_BAND=108, RING_SPEED=1.4;
+var rings=[], lastSpawn=-600;
 
-  var EASE_OUT=0.30;
-  var EASE_BACK=0.09;
+// sine LUT
+var LUT_N=2048, LUT=new Float32Array(LUT_N);
+for(var li=0;li<LUT_N;li++) LUT[li]=Math.sin(li/LUT_N*Math.PI*2);
+var LUT_K=LUT_N/(Math.PI*2);
+function fsin(x){ return LUT[((x*LUT_K)|0)&(LUT_N-1)]; }
+function fcos(x){ return LUT[(((x*LUT_K)|0)+(LUT_N>>2))&(LUT_N-1)]; }
 
-  var ACCENT=[16,206,41];
-  var BASE_R=2.47;
-  var BASE_ALPHA=0.125;
-  var HOT_ALPHA=1.45;
-  var GLOW=false;   // the halo pass doubles path work; the lit halo below covers it
+var NB=10, MAIN_COLORS=[], HALO_COLOR;
+for(var b=0;b<NB;b++){
+  var f=b/(NB-1);
+  var al=BASE_ALPHA+(HOT_ALPHA-BASE_ALPHA)*f; if(al>1) al=1;
+  MAIN_COLORS.push('rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+','+al.toFixed(3)+')');
+}
+HALO_COLOR='rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+',0.12)';
 
-  var t=0;
-  var RING_LIFE=600;
-  var RING_BAND=108;
-  var RING_SPEED=1.4;
-  var rings=[];
-  var lastSpawn=-RING_LIFE;
+// Bucket geometry is accumulated into flat reusable arrays instead of fresh
+// Path2D objects each frame — avoids ~10 allocations/frame and the GC hitches
+// that come with them.
+var bx=[], by=[], br=[], bn=[];
+for(var q=0;q<NB;q++){ bx.push([]); by.push([]); br.push([]); bn.push(0); }
+var hx_=[], hy_=[], hr_=[], hn=0;
+var actRing=[];   // reused per-row scratch: indices of rings touching that row
 
-  var VH=0, cols=0, rows=0, offX=0, offY=0;
+function spawnRing(){
+  rings.push({ x:W/2, y:scrollY+VH/2, life:0 });
+}
 
-  function spawnRing(){
-    var sy = window.scrollY||window.pageYOffset||0;
-    rings.push({ x: W/2, y: sy + VH/2, life:0 });
-  }
+function resize(msg){
+  W=msg.W; VH=msg.VH; H=msg.H; DPR=msg.DPR; IS_MOBILE=msg.IS_MOBILE;
+  TARGET_DOTS = IS_MOBILE ? 1538 : 3400;
+  if(ctx.canvas){ ctx.canvas.width=W*DPR; ctx.canvas.height=VH*DPR; }
+  RING_SPEED=(Math.hypot(W,VH)*0.62)/(RING_LIFE*0.8);
+  GAP=Math.sqrt((W*VH)/TARGET_DOTS);
+  if(GAP<GAP_MIN) GAP=GAP_MIN;
+  if(GAP>GAP_MAX) GAP=GAP_MAX;
+  build();
+}
 
-  // sine LUT
-  var LUT_N=2048, LUT=new Float32Array(LUT_N);
-  for(var li=0;li<LUT_N;li++) LUT[li]=Math.sin(li/LUT_N*Math.PI*2);
-  var LUT_K=LUT_N/(Math.PI*2);
-  function fsin(x){ return LUT[((x*LUT_K)|0)&(LUT_N-1)]; }
-  function fcos(x){ return LUT[(((x*LUT_K)|0)+(LUT_N>>2))&(LUT_N-1)]; }
-
-  // precomputed bucket colors
-  var NBUCKETS=10, MAIN_COLORS=[], GLOW_COLORS=[];
-  var HALO_COLOR='rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+',0.12)';
-  (function(){
-    for(var b=0;b<NBUCKETS;b++){
-      var f=b/(NBUCKETS-1);
-      var al=BASE_ALPHA+(HOT_ALPHA-BASE_ALPHA)*f; if(al>1) al=1;
-      MAIN_COLORS.push('rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+','+al.toFixed(3)+')');
-      GLOW_COLORS.push('rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+','+(0.025+0.14*f).toFixed(3)+')');
-    }
-  })();
-
-  function size(){
-    DPR = Math.min(window.devicePixelRatio||1, IS_MOBILE ? 1 : 1.5);
-    W = window.innerWidth;
-    VH = window.innerHeight;
-    H = Math.max(VH*6, document.documentElement.scrollHeight);
-    cv.width=W*DPR; cv.height=VH*DPR;
-    RING_SPEED = (Math.hypot(W,VH)*0.62)/(RING_LIFE*0.8);
-
-    GAP = Math.sqrt((W*VH)/TARGET_DOTS);
-    if(GAP<GAP_MIN) GAP=GAP_MIN;
-    if(GAP>GAP_MAX) GAP=GAP_MAX;
-
-    build();
-  }
-
-  function build(){
-    dots=[];
-    cols = Math.ceil(W/GAP)+1;
-    rows = Math.ceil(H/GAP)+1;
-    offX = (W - (cols-1)*GAP)/2;
-    offY = 0;
-    for(var r=0;r<rows;r++){
-      for(var c=0;c<cols;c++){
-        var hx = offX + c*GAP;
-        var hy = offY + r*GAP;
-        dots.push({
-          hx:hx, hy:hy, x:hx, y:hy,
-          ph:hx*0.05+hy*0.05,
-          px:hx*0.08, py:hy*0.08
-        });
-      }
+function build(){
+  dots=[];
+  cols=Math.ceil(W/GAP)+1;
+  rows=Math.ceil(H/GAP)+1;
+  offX=(W-(cols-1)*GAP)/2;
+  offY=0;
+  for(var r=0;r<rows;r++){
+    for(var c=0;c<cols;c++){
+      var x=offX+c*GAP, y=offY+r*GAP;
+      dots.push({hx:x,hy:y,x:x,y:y,ph:x*0.05+y*0.05,px:x*0.08,py:y*0.08});
     }
   }
+}
 
-  function frame(){
-    t++;
+function frame(){
+  if(!running) return;
+  t++;
 
-    if(t-lastSpawn>=RING_LIFE){ spawnRing(); lastSpawn=t; }
-    for(var ri=rings.length-1; ri>=0; ri--){
-      rings[ri].life++;
-      if(rings[ri].life > RING_LIFE) rings.splice(ri,1);
-    }
+  if(t-lastSpawn>=RING_LIFE){ spawnRing(); lastSpawn=t; }
+  for(var ri=rings.length-1;ri>=0;ri--){
+    rings[ri].life++;
+    if(rings[ri].life>RING_LIFE) rings.splice(ri,1);
+  }
 
-    var sx = window.scrollX||window.pageXOffset||0;
-    var sy = window.scrollY||window.pageYOffset||0;
+  var sx=scrollX, sy=scrollY;
+  ctx.setTransform(DPR,0,0,DPR,-sx*DPR,-sy*DPR);
+  ctx.clearRect(sx,sy,W,VH);
 
-    ctx.setTransform(DPR,0,0,DPR,-sx*DPR,-sy*DPR);
-    ctx.clearRect(sx,sy,W,VH);
+  var i,a,dx,dy,d,tx,ty,lit,rlit,rad,k,jit,edge,bi,pushed;
 
-    var i,a,dx,dy,d,tx,ty,lit,rlit,rad,k,jit,edge,bi,pushed;
+  for(k=0;k<NB;k++) bn[k]=0;
+  hn=0;
 
-    var BUCKETS=NBUCKETS;
-    var mainPaths=[], glowPaths=[];
-    for(bi=0;bi<BUCKETS;bi++){ mainPaths.push(new Path2D()); if(GLOW) glowPaths.push(new Path2D()); }
-    var haloPath = new Path2D();
-    var anyHalo=false;
+  // ring state hoisted, plus the row span each ring can possibly touch:
+  // a ring only intersects rows between (cy - outer) and (cy + outer), so
+  // dots outside that band skip the ring loop entirely.
+  var rn=rings.length;
+  var rX=[],rY=[],rAge=[],rOuter=[],rStr=[],rRowLo=[],rRowHi=[];
+  for(k=0;k<rn;k++){
+    var rg=rings[k];
+    var age=rg.life*RING_SPEED;
+    var str=1-(rg.life/RING_LIFE); if(str<0) str=0; str=str*str;
+    var outer=age+RING_BAND;
+    rX[k]=rg.x; rY[k]=rg.y; rAge[k]=age; rOuter[k]=outer; rStr[k]=str;
+    rRowLo[k]=Math.floor((rg.y-outer-offY)/GAP);
+    rRowHi[k]=Math.ceil((rg.y+outer-offY)/GAP);
+  }
 
-    var rn=rings.length;
-    var rX=[],rY=[],rAge=[],rOuter=[],rStr=[];
+  var margin=GAP*2;
+  var rStart=Math.floor((sy-margin-offY)/GAP); if(rStart<0) rStart=0;
+  var rEnd=Math.ceil((sy+VH+margin-offY)/GAP); if(rEnd>rows-1) rEnd=rows-1;
+
+  var pActive=pointer.active, pxp=pointer.x+sx, pyp=pointer.y+sy;
+  var tj=t*0.03, tx2=t*0.02, ty2=t*0.021;
+  var nBands=PUSH_BANDS.length;
+
+  for(var row=rStart;row<=rEnd;row++){
+    // which rings can affect this row at all? (reuses one array, no allocation)
+    var nAct=0;
     for(k=0;k<rn;k++){
-      var rg=rings[k];
-      var age = rg.life*RING_SPEED;
-      var str = 1-(rg.life/RING_LIFE);
-      if(str<0) str=0;
-      str = str*str;
-      rX[k]=rg.x; rY[k]=rg.y;
-      rAge[k]=age; rOuter[k]=age+RING_BAND; rStr[k]=str;
+      if(row>=rRowLo[k] && row<=rRowHi[k]){ actRing[nAct++]=k; }
     }
 
-    var margin = GAP*2;
-    var rStart = Math.floor((sy-margin-offY)/GAP); if(rStart<0) rStart=0;
-    var rEnd   = Math.ceil((sy+VH+margin-offY)/GAP); if(rEnd>rows-1) rEnd=rows-1;
-    var iStart = rStart*cols, iEnd = (rEnd+1)*cols;
+    var iStart=row*cols, iEnd=iStart+cols;
     if(iEnd>dots.length) iEnd=dots.length;
-
-    var pActive = pointer.active, pxp=pointer.x+sx, pyp=pointer.y+sy;
-    var tj=t*0.03, tx2=t*0.02, ty2=t*0.021;
-    var nBands=PUSH_BANDS.length;
 
     for(i=iStart;i<iEnd;i++){
       a=dots[i];
       tx=a.hx; ty=a.hy;
-      lit=0;
-      pushed=false;
+      lit=0; pushed=false;
 
       if(pActive){
         dx=a.hx-pxp; dy=a.hy-pyp;
         if(dx<REACH_MAX&&dx>-REACH_MAX&&dy<REACH_MAX&&dy>-REACH_MAX){
           d=Math.sqrt(dx*dx+dy*dy);
           for(var bd=0;bd<nBands;bd++){
-            if(d < PUSH*PUSH_BANDS[bd][0]){
-              var force = PUSH_BANDS[bd][1];
-              var inv = d>0.001 ? 1/d : 1;
-              tx = a.hx + dx*inv*force*PUSH*0.9;
-              ty = a.hy + dy*inv*force*PUSH*0.9;
-              pushed = true;
+            if(d<PUSH*PUSH_BANDS[bd][0]){
+              var force=PUSH_BANDS[bd][1];
+              var inv=d>0.001?1/d:1;
+              tx=a.hx+dx*inv*force*PUSH*0.9;
+              ty=a.hy+dy*inv*force*PUSH*0.9;
+              pushed=true;
               break;
             }
           }
           if(d<CURSOR_LIGHT){
-            var clit = 1-d/CURSOR_LIGHT;
-            clit = clit*clit;
+            var clit=1-d/CURSOR_LIGHT; clit=clit*clit;
             if(clit>lit) lit=clit;
           }
         }
       }
 
-      for(k=0;k<rn;k++){
+      // only the rings whose row-span covers this row
+      for(var ai=0;ai<nAct;ai++){
+        k = actRing[ai];
         dx=a.hx-rX[k]; dy=a.hy-rY[k];
         var oR=rOuter[k];
-        if(dx>oR||dx<-oR||dy>oR||dy<-oR) continue;
+        if(dx>oR||dx<-oR) continue;
         d=Math.sqrt(dx*dx+dy*dy);
-        edge = d-rAge[k]; if(edge<0) edge=-edge;
+        edge=d-rAge[k]; if(edge<0) edge=-edge;
         if(edge<RING_BAND){
-          rlit = (1-edge/RING_BAND);
-          rlit = rlit*rlit*1.7*rStr[k];
+          rlit=(1-edge/RING_BAND); rlit=rlit*rlit*1.7*rStr[k];
           if(rlit>lit) lit=rlit;
         }
       }
 
-      jit = 0.06 + 0.05*fsin(tj + a.ph);
+      jit=0.06+0.05*fsin(tj+a.ph);
       if(jit*0.5>lit) lit=jit*0.5;
-
       if(lit>1) lit=1;
 
-      tx += fsin(tx2 + a.px)*0.5;
-      ty += fcos(ty2 + a.py)*0.5;
+      tx+=fsin(tx2+a.px)*0.5;
+      ty+=fcos(ty2+a.py)*0.5;
 
-      var ez = pushed ? EASE_OUT : EASE_BACK;
-      a.x += (tx-a.x)*ez;
-      a.y += (ty-a.y)*ez;
+      var ez=pushed?EASE_OUT:EASE_BACK;
+      a.x+=(tx-a.x)*ez;
+      a.y+=(ty-a.y)*ez;
 
-      rad = BASE_R + lit*1.4;
+      rad=BASE_R+lit*1.4;
+      bi=(lit*(NB-1))|0;
+      if(bi<0) bi=0; else if(bi>NB-1) bi=NB-1;
 
-      bi = (lit*(BUCKETS-1))|0;
-      if(bi<0) bi=0; else if(bi>BUCKETS-1) bi=BUCKETS-1;
-      mainPaths[bi].moveTo(a.x+rad, a.y);
-      mainPaths[bi].arc(a.x,a.y,rad,0,6.28318);
-
-      if(GLOW){
-        glowPaths[bi].moveTo(a.x+rad*2.2, a.y);
-        glowPaths[bi].arc(a.x,a.y,rad*2.2,0,6.28318);
-      }
+      var n=bn[bi];
+      bx[bi][n]=a.x; by[bi][n]=a.y; br[bi][n]=rad;
+      bn[bi]=n+1;
 
       if(lit>0.15){
-        anyHalo=true;
-        haloPath.moveTo(a.x+rad*2.2, a.y);
-        haloPath.arc(a.x,a.y,rad*2.2,0,6.28318);
+        hx_[hn]=a.x; hy_[hn]=a.y; hr_[hn]=rad*2.2; hn++;
       }
     }
-
-    for(bi=0;bi<BUCKETS;bi++){
-      ctx.fillStyle=MAIN_COLORS[bi];
-      ctx.fill(mainPaths[bi]);
-    }
-    if(GLOW){
-      for(bi=0;bi<BUCKETS;bi++){
-        ctx.fillStyle=GLOW_COLORS[bi];
-        ctx.fill(glowPaths[bi]);
-      }
-    }
-    if(anyHalo){
-      ctx.fillStyle=HALO_COLOR;
-      ctx.fill(haloPath);
-    }
-
-    raf=requestAnimationFrame(frame);
   }
 
-  // pointer stored in viewport coords, converted to page coords each frame
-  function move(x,y){ pointer.x=x; pointer.y=y; pointer.active=true; }
-  window.addEventListener('mousemove',function(e){move(e.clientX,e.clientY)},{passive:true});
-  window.addEventListener('mouseleave',function(){pointer.active=false});
-  window.addEventListener('touchstart',function(e){if(e.touches[0])move(e.touches[0].clientX,e.touches[0].clientY)},{passive:true});
-  window.addEventListener('touchmove',function(e){if(e.touches[0])move(e.touches[0].clientX,e.touches[0].clientY)},{passive:true});
-  window.addEventListener('touchend',function(){pointer.active=false},{passive:true});
+  // one beginPath + one fill per bucket — no Path2D allocation
+  for(bi=0;bi<NB;bi++){
+    var cnt=bn[bi];
+    if(!cnt) continue;
+    ctx.beginPath();
+    var axs=bx[bi], ays=by[bi], ars=br[bi];
+    for(i=0;i<cnt;i++){
+      ctx.moveTo(axs[i]+ars[i], ays[i]);
+      ctx.arc(axs[i],ays[i],ars[i],0,6.28318);
+    }
+    ctx.fillStyle=MAIN_COLORS[bi];
+    ctx.fill();
+  }
+  if(hn){
+    ctx.beginPath();
+    for(i=0;i<hn;i++){
+      ctx.moveTo(hx_[i]+hr_[i], hy_[i]);
+      ctx.arc(hx_[i],hy_[i],hr_[i],0,6.28318);
+    }
+    ctx.fillStyle=HALO_COLOR;
+    ctx.fill();
+  }
+
+  requestAnimationFrame(frame);
+}
+
+function handle(msg){
+  if(msg.type==='init'){
+    if(msg.canvas){ ctx=msg.canvas.getContext('2d'); }
+    resize(msg);
+    running=true;
+    requestAnimationFrame(frame);
+  } else if(msg.type==='resize'){
+    resize(msg);
+  } else if(msg.type==='pointer'){
+    pointer.x=msg.x; pointer.y=msg.y; pointer.active=msg.active;
+  } else if(msg.type==='scroll'){
+    scrollX=msg.x; scrollY=msg.y;
+  } else if(msg.type==='pause'){
+    running=false;
+  } else if(msg.type==='resume'){
+    if(!running){ running=true; requestAnimationFrame(frame); }
+  }
+}
+
+// in a worker context, listen for messages; on the main thread the host
+// calls handle() directly
+if(typeof self!=='undefined' && typeof self.postMessage==='function' && typeof window==='undefined'){
+  self.onmessage=function(e){ handle(e.data); };
+}
+</script>
+
+<script>
+(function(){
+  var cv = document.getElementById('dots');
+  var IS_MOBILE = matchMedia('(pointer: coarse)').matches || window.innerWidth < 760;
+  var src = document.getElementById('dots-renderer').textContent;
+
+  var worker=null, localHandle=null;
+
+  function metrics(){
+    return {
+      W: window.innerWidth,
+      VH: window.innerHeight,
+      H: Math.max(window.innerHeight*6, document.documentElement.scrollHeight),
+      DPR: Math.min(window.devicePixelRatio||1, IS_MOBILE ? 1 : 1.5),
+      IS_MOBILE: IS_MOBILE
+    };
+  }
+
+  function send(msg, transfer){
+    if(worker) worker.postMessage(msg, transfer||[]);
+    else if(localHandle) localHandle(msg);
+  }
+
+  var canUseWorker = ('transferControlToOffscreen' in cv) &&
+                     typeof Worker!=='undefined' && typeof Blob!=='undefined';
+
+  if(canUseWorker){
+    try{
+      var blob = new Blob([src], {type:'application/javascript'});
+      worker = new Worker(URL.createObjectURL(blob));
+      var off = cv.transferControlToOffscreen();
+      var m = metrics(); m.type='init'; m.canvas=off;
+      worker.postMessage(m, [off]);
+    }catch(err){
+      worker=null;
+    }
+  }
+
+  if(!worker){
+    // main-thread fallback: run the same renderer source in this context
+    // and drive it by calling handle() directly instead of postMessage
+    localHandle = new Function(src + '\nreturn handle;')();
+    var m2 = metrics();
+    m2.type = 'init';
+    m2.canvas = cv;
+    localHandle(m2);
+  }
+
+  // ---- forward input/state to the renderer ----
+  function pt(x,y,active){ send({type:'pointer',x:x,y:y,active:active}); }
+  window.addEventListener('mousemove',function(e){pt(e.clientX,e.clientY,true)},{passive:true});
+  window.addEventListener('mouseleave',function(){pt(-9999,-9999,false)});
+  window.addEventListener('touchstart',function(e){if(e.touches[0])pt(e.touches[0].clientX,e.touches[0].clientY,true)},{passive:true});
+  window.addEventListener('touchmove',function(e){if(e.touches[0])pt(e.touches[0].clientX,e.touches[0].clientY,true)},{passive:true});
+  window.addEventListener('touchend',function(){pt(-9999,-9999,false)},{passive:true});
+
+  var sQueued=false;
+  window.addEventListener('scroll',function(){
+    if(sQueued) return;
+    sQueued=true;
+    requestAnimationFrame(function(){
+      sQueued=false;
+      send({type:'scroll',x:window.scrollX||0,y:window.scrollY||0});
+    });
+  },{passive:true});
 
   var rt;
-  window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(size,150)});
-  document.addEventListener('visibilitychange',function(){
-    if(document.hidden){ if(raf) cancelAnimationFrame(raf); raf=null; }
-    else if(!raf){ raf=requestAnimationFrame(frame); }
+  window.addEventListener('resize',function(){
+    clearTimeout(rt);
+    rt=setTimeout(function(){
+      var m=metrics(); m.type='resize'; send(m);
+    },150);
   });
 
-  size();
-  raf=requestAnimationFrame(frame);
-})();
+  document.addEventListener('visibilitychange',function(){
+    send({type: document.hidden ? 'pause' : 'resume'});
+  });
 
+  // expose so the view switcher can re-measure page height after a view change
+  window.__dotsResize = function(){ var m=metrics(); m.type='resize'; send(m); };
+})();
+</script>
+
+<script>
 /* ================= VIEW SWITCHING ================= */
 (function(){
   var views = {
@@ -731,6 +818,8 @@
     document.body.classList.toggle('on-main', name==='main');
     window.scrollTo(0,0);
     if(history.replaceState) history.replaceState(null,'','#'+name);
+    // page height changed, so the dot grid needs to know its new extent
+    if(window.__dotsResize) window.__dotsResize();
   }
 
   document.addEventListener('click',function(e){
