@@ -21,10 +21,10 @@
     --mono:"IBM Plex Mono",ui-monospace,monospace;
   }
   *{box-sizing:border-box}
-  html{background:var(--bg)}
+  html{background:var(--bg);overflow-x:hidden}
   body{
     margin:0;background:var(--bg);color:var(--ink);
-    font-family:var(--display);
+    font-family:var(--display);overflow-x:hidden;
   }
 
   #dots{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
@@ -88,7 +88,7 @@
   /* --- description panel with HUD corner brackets --- */
   .panel{
     position:relative;padding:24px 26px;
-    background:rgba(11,14,17,.7);
+    background:rgba(11,14,17,.86);
     border:1px solid rgba(236,237,234,.10);
     border-radius:4px;
   }
@@ -116,9 +116,9 @@
 
   /* ---- full-page inset frame ---- */
   .page-frame{
-  position:fixed;inset:16px;z-index:40;pointer-events:none;
-  border:8px solid rgba(16, 206, 41, 0.349);
-  border-radius:16px;
+    position:fixed;inset:16px;z-index:40;pointer-events:none;
+    border:8px solid rgba(16,206,41,.349);
+    border-radius:16px;
   }
   @media(max-width:760px){ .page-frame{inset:8px;border-width:3px;border-radius:8px} }
 
@@ -147,8 +147,6 @@
     max-width:96vw;max-height:92vh;
   }
   .lightbox img{
-    /* size against the viewport, not the wrapper — shows the image at its
-       natural resolution, only scaling down if it's larger than the screen */
     width:auto;height:auto;
     max-width:96vw;max-height:92vh;
     border-radius:4px;
@@ -196,6 +194,8 @@
     .lb-prev{left:8px} .lb-next{right:8px}
     .lb-close{top:12px;right:12px;width:36px;height:36px}
   }
+
+  /* ---- two-view switching ---- */
   .view{display:none}
   .view.active{display:block}
   body.on-main{overflow:hidden;height:100%}
@@ -216,12 +216,6 @@
 
   .back-row{display:flex;justify-content:center;margin-bottom:40px}
 
-  .scroll-cue{
-    position:absolute;left:50%;bottom:34px;transform:translateX(-50%);
-    font-family:var(--mono);font-size:10px;letter-spacing:.2em;
-    text-transform:uppercase;color:var(--muted);opacity:.7;
-  }
-
   /* ---- portfolio ---- */
   .portfolio{position:relative;z-index:2;padding:70px 24px 110px;max-width:980px;margin:0 auto}
   .p-head{text-align:center;margin-bottom:56px}
@@ -230,8 +224,8 @@
   .p-head p{margin:0 auto;color:var(--muted)}
 
   .proj{
-    background:rgba(16,19,23,.82);border:1px solid var(--rule);border-radius:6px;
-    overflow:hidden;margin-bottom:26px;backdrop-filter:blur(6px);
+    background:rgba(16,19,23,.94);border:1px solid var(--rule);border-radius:6px;
+    overflow:hidden;margin-bottom:26px;
   }
   .proj-grid{display:grid;grid-template-columns:1fr 1fr}
   @media(max-width:760px){.proj-grid{grid-template-columns:1fr}}
@@ -261,61 +255,55 @@
   .pf{display:flex;flex-direction:column;gap:3px}
   .pf .tag{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
   .pf .val{font-size:.87rem;color:var(--muted);line-height:1.5;margin:0}
-  @media(max-width:760px){.proj-info{padding:22px 20px}}
 
   footer{
     position:relative;z-index:2;text-align:center;
     font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
     color:#464C53;padding:30px 0 40px;
   }
+
   @media(max-width:760px){
-    .panel,.proj{backdrop-filter:none}
+    h1{font-size:clamp(1.35rem,6.5vw,1.85rem);line-height:1.22;margin:0 0 16px;letter-spacing:-0.015em}
+    .mark{font-size:9px;letter-spacing:.24em;margin-bottom:14px;gap:8px}
+    .mark::before,.mark::after{width:14px}
+    .tagline{font-size:.62rem;letter-spacing:.12em;padding:6px 12px;margin-bottom:14px}
+    .descbox{font-size:.74rem;line-height:1.6}
 
-    /* --- type scales down and tightens --- */
-    h1{font-size:clamp(1.55rem,7.2vw,2.1rem);line-height:1.2;margin:0 0 20px;letter-spacing:-0.015em}
-    .mark{font-size:9.5px;letter-spacing:.26em;margin-bottom:16px;gap:9px}
-    .mark::before,.mark::after{width:18px}
-    .tagline{font-size:.66rem;letter-spacing:.13em;padding:7px 14px;margin-bottom:18px}
-    .descbox{font-size:.79rem;line-height:1.65}
+    .panel{padding:14px 16px;border-radius:3px}
+    .panel::before,.panel::after{width:11px;height:11px}
+    .center::before{height:200px;top:-20px;width:110%}
 
-    .panel{padding:18px 18px;border-radius:3px}
-    .panel::before,.panel::after{width:13px;height:13px}
-    .center::before{height:250px;top:-30px}
+    .hero{min-height:100svh;padding:50px 0 40px}
+    .center{padding:0 32px;max-width:520px}
 
-    /* --- hero breathing room --- */
-    .hero{min-height:100svh;padding:64px 0 48px}
-    .center{padding:0 20px}
-
-    /* --- buttons: full-width, easier to tap --- */
-    .row{gap:10px;margin-top:16px;flex-direction:column;align-items:stretch}
-    a.btn,.navbtn{width:100%;text-align:center;padding:14px 18px;font-size:12px}
+    .row{gap:8px;margin-top:14px;flex-direction:column;align-items:center}
+    a.btn,.navbtn{width:auto;min-width:200px;text-align:center;padding:12px 24px;font-size:11px}
     .navbtn{border-width:2px;letter-spacing:.08em}
 
-    /* --- portfolio --- */
-    .portfolio{padding:44px 18px 70px}
-    .p-head{margin-bottom:34px}
-    .p-head h2{font-size:1.5rem}
-    .p-head p{font-size:.85rem}
-    .back-row{margin-bottom:26px}
-    .proj{border-radius:8px;margin-bottom:18px}
-    .proj-info{gap:13px}
-    .proj-info h3{font-size:1.02rem}
-    .proj-info .desc{font-size:11.5px;line-height:1.5}
-    .pf .tag{font-size:9px;letter-spacing:.11em}
-    .pf .val{font-size:.8rem;line-height:1.45}
+    .portfolio{padding:40px 28px 60px;max-width:600px}
+    .p-head{margin-bottom:28px}
+    .p-head h2{font-size:1.3rem}
+    .p-head p{font-size:.8rem}
+    .back-row{margin-bottom:22px}
+    .proj{border-radius:6px;margin-bottom:16px}
+    .proj-info{gap:10px;padding:18px 16px}
+    .proj-info h3{font-size:.95rem}
+    .proj-info .desc{font-size:10.5px;line-height:1.5}
+    .pf .tag{font-size:8.5px;letter-spacing:.1em}
+    .pf .val{font-size:.76rem;line-height:1.4}
     .slides{aspect-ratio:16/10}
-    .sdots{bottom:10px}
-    .sdots button{width:7px;height:7px}
+    .sdots{bottom:8px}
+    .sdots button{width:6px;height:6px}
 
-    footer{font-size:9.5px;padding:22px 0 30px}
+    footer{font-size:9px;padding:18px 0 26px}
   }
 
-  /* very small phones */
   @media(max-width:380px){
-    h1{font-size:1.4rem}
-    .panel{padding:15px 15px}
-    .portfolio{padding:38px 14px 60px}
-    .proj-info{padding:18px 16px}
+    h1{font-size:1.25rem}
+    .center{padding:0 24px;max-width:480px}
+    .panel{padding:12px 14px}
+    .portfolio{padding:34px 20px 50px}
+    .proj-info{padding:14px 14px}
   }
 </style>
 </head>
@@ -362,11 +350,11 @@
   <article class="proj">
     <div class="proj-grid">
       <div class="slides" data-slides>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_1\\Picture1.png"></div></div>
-        <div class="slide"><div class="ph"><img src=".\\PIC\proj_1\\Picture2.png"></div></div>
-        <div class="slide"><div class="ph"><img src=".\\PIC\proj_1\\Picture3.png"></div></div>
-        <div class="slide"><div class="ph"><img src=".\\PIC\proj_1\\Picture4.png"></div></div>
-        <div class="slide"><div class="ph"><img src=".\\PIC\proj_1\\Picture5.png"></div></div>
+        <div class="slide on"><img src="PIC/proj_1/Picture1.png" alt="File-Bus Pipeline screenshot 1" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_1/Picture2.png" alt="File-Bus Pipeline screenshot 2" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_1/Picture3.png" alt="File-Bus Pipeline screenshot 3" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_1/Picture4.png" alt="File-Bus Pipeline screenshot 4" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_1/Picture5.png" alt="File-Bus Pipeline screenshot 5" loading="lazy" decoding="async"></div>
         <div class="expand-hint" aria-hidden="true">⛶</div>
         <div class="sdots"></div>
       </div>
@@ -384,11 +372,11 @@
   <article class="proj">
     <div class="proj-grid">
       <div class="slides" data-slides>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_2\\Picture8.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_2\\Picture9.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_2\\Picture10.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_2\\Picture11.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_2\\Picture12.png"></div></div>
+        <div class="slide on"><img src="PIC/proj_2/Picture8.png" alt="TCG Tool Web screenshot 1" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_2/Picture9.png" alt="TCG Tool Web screenshot 2" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_2/Picture10.png" alt="TCG Tool Web screenshot 3" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_2/Picture11.png" alt="TCG Tool Web screenshot 4" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_2/Picture12.png" alt="TCG Tool Web screenshot 5" loading="lazy" decoding="async"></div>
         <div class="expand-hint" aria-hidden="true">⛶</div>
         <div class="sdots"></div>
       </div>
@@ -406,10 +394,10 @@
   <article class="proj">
     <div class="proj-grid">
       <div class="slides" data-slides>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_3\\Picture13.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_3\\Picture14.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_3\\Picture15.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_3\\Picture16.png"></div></div>
+        <div class="slide on"><img src="PIC/proj_3/Picture13.png" alt="Cloud Permission Auditor screenshot 1" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_3/Picture14.png" alt="Cloud Permission Auditor screenshot 2" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_3/Picture15.png" alt="Cloud Permission Auditor screenshot 3" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_3/Picture16.png" alt="Cloud Permission Auditor screenshot 4" loading="lazy" decoding="async"></div>
         <div class="expand-hint" aria-hidden="true">⛶</div>
         <div class="sdots"></div>
       </div>
@@ -427,13 +415,11 @@
   <article class="proj">
     <div class="proj-grid">
       <div class="slides" data-slides>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_4\\1.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_4\\2.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_4\\3.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_4\\4.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_4\\5.png"></div></div>
-        <div class="slide"><div class="ph">[Photo 2]</div></div>
-        <div class="slide"><div class="ph">[Photo 3]</div></div>
+        <div class="slide on"><img src="PIC/proj_4/1.png" alt="Careers-Page Monitor screenshot 1" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_4/2.png" alt="Careers-Page Monitor screenshot 2" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_4/3.png" alt="Careers-Page Monitor screenshot 3" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_4/4.png" alt="Careers-Page Monitor screenshot 4" loading="lazy" decoding="async"></div>
+        <div class="slide"><img src="PIC/proj_4/5.png" alt="Careers-Page Monitor screenshot 5" loading="lazy" decoding="async"></div>
         <div class="expand-hint" aria-hidden="true">⛶</div>
         <div class="sdots"></div>
       </div>
@@ -447,12 +433,11 @@
     </div>
   </article>
 
-
   <!-- ============ PROJECT 5 ============ -->
   <article class="proj">
     <div class="proj-grid">
       <div class="slides" data-slides>
-        <div class="slide on"><div class="ph">[Photo 1]</div></div>
+        <div class="slide on"><div class="ph">[Photo 1 — add &lt;img src="PIC/proj_5/1.png"&gt;]</div></div>
         <div class="slide"><div class="ph">[Photo 2]</div></div>
         <div class="slide"><div class="ph">[Photo 3]</div></div>
         <div class="expand-hint" aria-hidden="true">⛶</div>
@@ -484,58 +469,57 @@
 <script>
 (function(){
   var cv = document.getElementById('dots');
-  var ctx = cv.getContext('2d');
-  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ctx = cv.getContext('2d', {alpha:true});
   var IS_MOBILE = matchMedia('(pointer: coarse)').matches || window.innerWidth < 760;
   var W=0,H=0,DPR=1,dots=[],raf=null;
   var pointer={x:-9999,y:-9999,active:false};
-  var GAP=25;         // fallback/starting spacing, recomputed in size() from TARGET_DOTS
-  var TARGET_DOTS=IS_MOBILE ? 1538 : 4734; // tuned so spacing is 30% wider than before
+
+  var GAP=25;
+  var TARGET_DOTS=IS_MOBILE ? 1538 : 3400;
   var GAP_MIN=26, GAP_MAX=62;
-  var PUSH=52;       // base radius — the innermost, strongest band
-  // Concentric bands measured in multiples of PUSH.
-  // Each entry is [radius multiplier, push strength].
-  // 1.0x pushes hardest, then each ring outward pushes progressively less.
+
+  var PUSH=52;
   var PUSH_BANDS=[
     [1.0, 0.60],
     [1.1, 0.40],
     [1.4, 0.20],
     [1.6, 0.15]
   ];
-  var PUSH_MAX=PUSH*1.6; // outermost reach, used for the fast reject test
-  var CURSOR_LIGHT=140; // radius of the brightness boost around the cursor
-  var REACH_MAX=Math.max(CURSOR_LIGHT, PUSH_MAX); // outermost cursor influence
-  var EASE_OUT=0.30;   // how fast dots flee the cursor (higher = snappier escape)
-  var EASE_BACK=0.09;  // how fast dots drift back to their grid spot (lower = slower settle)
-  var ACCENT=[16,206,41]; // #10CE29 — lit color, also resting color
-  var BASE_R=2.47;     // default dot radius (30% bigger)
-  var BASE_ALPHA=0.125; // default brightness (2x dimmer when unlit)
-  var HOT_ALPHA=1.45;   // brightness under the pointer / waves
-  var GLOW=!IS_MOBILE;  // skip the always-on per-dot glow pass on phones
+  var PUSH_MAX=PUSH*1.6;
+  var CURSOR_LIGHT=140;
+  var REACH_MAX=Math.max(CURSOR_LIGHT, PUSH_MAX);
+
+  var EASE_OUT=0.30;
+  var EASE_BACK=0.09;
+
+  var ACCENT=[16,206,41];
+  var BASE_R=2.47;
+  var BASE_ALPHA=0.125;
+  var HOT_ALPHA=1.45;
+  var GLOW=false;   // the halo pass doubles path work; the lit halo below covers it
 
   var t=0;
-  var RING_LIFE=600;       // frames a wave lives (~10s at 60fps)
-  var RING_BAND=108;       // thickness of the lit band (35% wider)
-  var RING_SPEED=1.4;      // px per frame the ring expands (recomputed in size())
-  var rings=[];             // {x,y,life}
+  var RING_LIFE=600;
+  var RING_BAND=108;
+  var RING_SPEED=1.4;
+  var rings=[];
   var lastSpawn=-RING_LIFE;
 
+  var VH=0, cols=0, rows=0, offX=0, offY=0;
+
   function spawnRing(){
-    // always from the current center of the screen
     var sy = window.scrollY||window.pageYOffset||0;
     rings.push({ x: W/2, y: sy + VH/2, life:0 });
   }
 
-  // --- sine lookup table: replaces ~3 Math.sin/cos calls per dot per frame ---
+  // sine LUT
   var LUT_N=2048, LUT=new Float32Array(LUT_N);
   for(var li=0;li<LUT_N;li++) LUT[li]=Math.sin(li/LUT_N*Math.PI*2);
   var LUT_K=LUT_N/(Math.PI*2);
   function fsin(x){ return LUT[((x*LUT_K)|0)&(LUT_N-1)]; }
   function fcos(x){ return LUT[(((x*LUT_K)|0)+(LUT_N>>2))&(LUT_N-1)]; }
 
-  var VH=0, cols=0, rows=0, offX=0, offY=0;
-
-  // precomputed fill colors, one per brightness bucket (built once, not per frame)
+  // precomputed bucket colors
   var NBUCKETS=10, MAIN_COLORS=[], GLOW_COLORS=[];
   var HALO_COLOR='rgba('+ACCENT[0]+','+ACCENT[1]+','+ACCENT[2]+',0.12)';
   (function(){
@@ -548,29 +532,20 @@
   })();
 
   function size(){
-    DPR = Math.min(window.devicePixelRatio||1, IS_MOBILE ? 1 : 2);
+    DPR = Math.min(window.devicePixelRatio||1, IS_MOBILE ? 1 : 1.5);
     W = window.innerWidth;
     VH = window.innerHeight;
-    // Build the grid tall enough to cover the taller view (portfolio) up front.
-    // Off-screen rows are culled each frame, so extra height costs memory only —
-    // this means switching views never triggers a rebuild, and the animation
-    // (wave phase, dot positions, timers) carries over seamlessly.
     H = Math.max(VH*6, document.documentElement.scrollHeight);
-    // canvas is only viewport-sized now — we translate the grid by scroll
-    // instead of allocating a canvas as tall as the whole document
     cv.width=W*DPR; cv.height=VH*DPR;
-    // expand fast enough to clear the screen within the wave's lifetime,
-    // so the ring is fully travelled by the time it finishes fading
     RING_SPEED = (Math.hypot(W,VH)*0.62)/(RING_LIFE*0.8);
 
-    // spacing chosen so the number of dots VISIBLE at once stays constant,
-    // independent of how tall the page is
     GAP = Math.sqrt((W*VH)/TARGET_DOTS);
     if(GAP<GAP_MIN) GAP=GAP_MIN;
     if(GAP>GAP_MAX) GAP=GAP_MAX;
 
     build();
   }
+
   function build(){
     dots=[];
     cols = Math.ceil(W/GAP)+1;
@@ -583,12 +558,13 @@
         var hy = offY + r*GAP;
         dots.push({
           hx:hx, hy:hy, x:hx, y:hy,
-          ph:hx*0.05+hy*0.05,   // precomputed phases so the loop does no extra math
+          ph:hx*0.05+hy*0.05,
           px:hx*0.08, py:hy*0.08
         });
       }
     }
   }
+
   function frame(){
     t++;
 
@@ -601,7 +577,6 @@
     var sx = window.scrollX||window.pageXOffset||0;
     var sy = window.scrollY||window.pageYOffset||0;
 
-    // draw in page coordinates but only over the visible viewport
     ctx.setTransform(DPR,0,0,DPR,-sx*DPR,-sy*DPR);
     ctx.clearRect(sx,sy,W,VH);
 
@@ -613,21 +588,18 @@
     var haloPath = new Path2D();
     var anyHalo=false;
 
-    // hoist ring bounds + fade strength out of the inner loop
     var rn=rings.length;
     var rX=[],rY=[],rAge=[],rOuter=[],rStr=[];
     for(k=0;k<rn;k++){
       var rg=rings[k];
       var age = rg.life*RING_SPEED;
-      // fade continuously across the whole life, not just at the end
       var str = 1-(rg.life/RING_LIFE);
       if(str<0) str=0;
-      str = str*str; // ease out so it thins gradually rather than linearly
+      str = str*str;
       rX[k]=rg.x; rY[k]=rg.y;
       rAge[k]=age; rOuter[k]=age+RING_BAND; rStr[k]=str;
     }
 
-    // only touch the rows of the grid that are actually on screen
     var margin = GAP*2;
     var rStart = Math.floor((sy-margin-offY)/GAP); if(rStart<0) rStart=0;
     var rEnd   = Math.ceil((sy+VH+margin-offY)/GAP); if(rEnd>rows-1) rEnd=rows-1;
@@ -636,6 +608,7 @@
 
     var pActive = pointer.active, pxp=pointer.x+sx, pyp=pointer.y+sy;
     var tj=t*0.03, tx2=t*0.02, ty2=t*0.021;
+    var nBands=PUSH_BANDS.length;
 
     for(i=iStart;i<iEnd;i++){
       a=dots[i];
@@ -647,8 +620,7 @@
         dx=a.hx-pxp; dy=a.hy-pyp;
         if(dx<REACH_MAX&&dx>-REACH_MAX&&dy<REACH_MAX&&dy>-REACH_MAX){
           d=Math.sqrt(dx*dx+dy*dy);
-          // walk outward through the bands; first one that contains the dot wins
-          for(var bd=0;bd<PUSH_BANDS.length;bd++){
+          for(var bd=0;bd<nBands;bd++){
             if(d < PUSH*PUSH_BANDS[bd][0]){
               var force = PUSH_BANDS[bd][1];
               var inv = d>0.001 ? 1/d : 1;
@@ -666,7 +638,6 @@
         }
       }
 
-      // expanding ring waves — cheap bbox reject before the sqrt
       for(k=0;k<rn;k++){
         dx=a.hx-rX[k]; dy=a.hy-rY[k];
         var oR=rOuter[k];
@@ -680,9 +651,8 @@
         }
       }
 
-      // small constant idle life so dots are never fully static
       jit = 0.06 + 0.05*fsin(tj + a.ph);
-      if(jit>lit) lit=jit*0.5>lit?jit*0.5:lit;
+      if(jit*0.5>lit) lit=jit*0.5;
 
       if(lit>1) lit=1;
 
@@ -705,7 +675,7 @@
         glowPaths[bi].arc(a.x,a.y,rad*2.2,0,6.28318);
       }
 
-      if(lit>0.08){
+      if(lit>0.15){
         anyHalo=true;
         haloPath.moveTo(a.x+rad*2.2, a.y);
         haloPath.arc(a.x,a.y,rad*2.2,0,6.28318);
@@ -730,8 +700,7 @@
     raf=requestAnimationFrame(frame);
   }
 
-  // stored in VIEWPORT coords; converted to page coords each frame so that
-  // scrolling without moving the mouse still updates the effective position
+  // pointer stored in viewport coords, converted to page coords each frame
   function move(x,y){ pointer.x=x; pointer.y=y; pointer.active=true; }
   window.addEventListener('mousemove',function(e){move(e.clientX,e.clientY)},{passive:true});
   window.addEventListener('mouseleave',function(){pointer.active=false});
@@ -750,7 +719,7 @@
   raf=requestAnimationFrame(frame);
 })();
 
-/* ================= VIEW SWITCHING (main <-> portfolio) ================= */
+/* ================= VIEW SWITCHING ================= */
 (function(){
   var views = {
     main: document.getElementById('view-main'),
@@ -759,7 +728,6 @@
 
   function show(name){
     for(var k in views){ views[k].classList.toggle('active', k===name); }
-    // main is a single locked screen; portfolio scrolls normally
     document.body.classList.toggle('on-main', name==='main');
     window.scrollTo(0,0);
     if(history.replaceState) history.replaceState(null,'','#'+name);
@@ -771,11 +739,10 @@
     show(b.getAttribute('data-goto'));
   });
 
-  // honour a direct link like yoursite.com/#portfolio
   show(location.hash==='#portfolio' ? 'portfolio' : 'main');
 })();
 
-/* ================= PORTFOLIO SLIDESHOWS + LIGHTBOX ================= */
+/* ================= SLIDESHOWS + LIGHTBOX ================= */
 (function(){
   var lb       = document.getElementById('lightbox');
   var lbStage  = document.getElementById('lb-stage');
@@ -784,10 +751,9 @@
   var lbPrev   = document.getElementById('lb-prev');
   var lbNext   = document.getElementById('lb-next');
 
-  var active = null;   // {slides, idx}
-  var AUTO_MS = 15000; // auto-advance interval
+  var active = null;
+  var AUTO_MS = 15000;
 
-  // ---- render whatever is in a slide into the lightbox stage ----
   function renderStage(){
     if(!active) return;
     var src = active.slides[active.idx];
@@ -799,7 +765,6 @@
       big.alt = img.alt || '';
       lbStage.appendChild(big);
     } else {
-      // placeholder slides have no <img> yet
       var ph = document.createElement('div');
       ph.className = 'lb-ph';
       ph.textContent = (src.querySelector('.ph')||{}).textContent || 'No image yet';
@@ -818,7 +783,6 @@
     lb.classList.remove('open');
     lbStage.innerHTML = '';
     active = null;
-    // restore scrolling unless we're on the locked main view
     if(!document.body.classList.contains('on-main')) document.body.style.overflow = '';
   }
   function stepLB(dir){
@@ -831,7 +795,6 @@
   lbClose.addEventListener('click', closeLB);
   lbPrev.addEventListener('click', function(e){ e.stopPropagation(); stepLB(-1); });
   lbNext.addEventListener('click', function(e){ e.stopPropagation(); stepLB(1); });
-  // clicking the dark backdrop closes it
   lb.addEventListener('click', function(e){ if(e.target===lb) closeLB(); });
   document.addEventListener('keydown', function(e){
     if(!lb.classList.contains('open')) return;
@@ -840,13 +803,15 @@
     else if(e.key==='ArrowRight') stepLB(1);
   });
 
-  // ---- per-slideshow setup ----
   var groups = document.querySelectorAll('[data-slides]');
   groups.forEach(function(g){
     var slides = g.querySelectorAll('.slide');
     var dotsWrap = g.querySelector('.sdots');
     var idx = 0;
     var timer = null;
+
+    // safety: make sure exactly one slide starts visible
+    slides.forEach(function(s,i){ s.classList.toggle('on', i===0); });
 
     slides.forEach(function(_,i){
       var b = document.createElement('button');
@@ -869,7 +834,6 @@
       if(slides.length>1) timer = setInterval(function(){ go((idx+1)%slides.length); }, AUTO_MS);
     }
 
-    // clicking the image area opens it fullscreen at the current slide
     g.addEventListener('click', function(e){
       if(e.target.closest('.sdots')) return;
       openLB(slides, idx);
