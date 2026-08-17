@@ -116,9 +116,9 @@
 
   /* ---- full-page inset frame ---- */
   .page-frame{
-  position:fixed;inset:16px;z-index:40;pointer-events:none;
-  border:8px solid rgba(16, 206, 41, 0.349);
-  border-radius:16px;
+    position:fixed;inset:16px;z-index:40;pointer-events:none;
+    border:8px solid rgba(236,237,234,.14);
+    border-radius:10px;
   }
   @media(max-width:760px){ .page-frame{inset:8px;border-width:3px;border-radius:8px} }
 
@@ -362,11 +362,9 @@
   <article class="proj">
     <div class="proj-grid">
       <div class="slides" data-slides>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_1\\Picture1.png"></div></div>
-        <div class="slide"><div class="ph"><img src=".\\PIC\proj_1\\Picture2.png"></div></div>
-        <div class="slide"><div class="ph"><img src=".\\PIC\proj_1\\Picture3.png"></div></div>
-        <div class="slide"><div class="ph"><img src=".\\PIC\proj_1\\Picture4.png"></div></div>
-        <div class="slide"><div class="ph"><img src=".\\PIC\proj_1\\Picture5.png"></div></div>
+        <div class="slide on"><div class="ph">[Photo 1 — replace with &lt;img src="..."&gt;]</div></div>
+        <div class="slide"><div class="ph">[Photo 2]</div></div>
+        <div class="slide"><div class="ph">[Photo 3]</div></div>
         <div class="expand-hint" aria-hidden="true">⛶</div>
         <div class="sdots"></div>
       </div>
@@ -384,11 +382,9 @@
   <article class="proj">
     <div class="proj-grid">
       <div class="slides" data-slides>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_2\\Picture8.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_2\\Picture9.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_2\\Picture10.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_2\\Picture11.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_2\\Picture12.png"></div></div>
+        <div class="slide on"><div class="ph">[Photo 1]</div></div>
+        <div class="slide"><div class="ph">[Photo 2]</div></div>
+        <div class="slide"><div class="ph">[Photo 3]</div></div>
         <div class="expand-hint" aria-hidden="true">⛶</div>
         <div class="sdots"></div>
       </div>
@@ -406,10 +402,9 @@
   <article class="proj">
     <div class="proj-grid">
       <div class="slides" data-slides>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_3\\Picture13.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_3\\Picture14.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_3\\Picture15.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_3\\Picture16.png"></div></div>
+        <div class="slide on"><div class="ph">[Photo 1]</div></div>
+        <div class="slide"><div class="ph">[Photo 2]</div></div>
+        <div class="slide"><div class="ph">[Photo 3]</div></div>
         <div class="expand-hint" aria-hidden="true">⛶</div>
         <div class="sdots"></div>
       </div>
@@ -427,11 +422,7 @@
   <article class="proj">
     <div class="proj-grid">
       <div class="slides" data-slides>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_4\\1.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_4\\2.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_4\\3.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_4\\4.png"></div></div>
-        <div class="slide on"><div class="ph"><img src=".\\PIC\proj_4\\5.png"></div></div>
+        <div class="slide on"><div class="ph">[Photo 1]</div></div>
         <div class="slide"><div class="ph">[Photo 2]</div></div>
         <div class="slide"><div class="ph">[Photo 3]</div></div>
         <div class="expand-hint" aria-hidden="true">⛶</div>
@@ -446,7 +437,6 @@
       </div>
     </div>
   </article>
-
 
   <!-- ============ PROJECT 5 ============ -->
   <article class="proj">
@@ -489,17 +479,17 @@
   var IS_MOBILE = matchMedia('(pointer: coarse)').matches || window.innerWidth < 760;
   var W=0,H=0,DPR=1,dots=[],raf=null;
   var pointer={x:-9999,y:-9999,active:false};
-  var GAP=25;         // fallback/starting spacing, recomputed in size() from TARGET_DOTS
-  var TARGET_DOTS=IS_MOBILE ? 1538 : 4734; // tuned so spacing is 30% wider than before
-  var GAP_MIN=26, GAP_MAX=62;
-  var PUSH=52;       // base radius — the innermost, strongest band
+  var GAP=20;         // fallback/starting spacing, recomputed in size() from TARGET_DOTS
+  var TARGET_DOTS=IS_MOBILE ? 1538 : 2800; // dots visible at once
+  var GAP_MIN=18, GAP_MAX=62;
+  var PUSH=84;       // base radius — the innermost, strongest band
   // Concentric bands measured in multiples of PUSH.
   // Each entry is [radius multiplier, push strength].
   // 1.0x pushes hardest, then each ring outward pushes progressively less.
   var PUSH_BANDS=[
-    [1.0, 0.60],
-    [1.1, 0.40],
-    [1.4, 0.20],
+    [1.0, 1.00],
+    [1.2, 0.62],
+    [1.4, 0.34],
     [1.6, 0.15]
   ];
   var PUSH_MAX=PUSH*1.6; // outermost reach, used for the fast reject test
@@ -509,9 +499,9 @@
   var EASE_BACK=0.09;  // how fast dots drift back to their grid spot (lower = slower settle)
   var ACCENT=[16,206,41]; // #10CE29 — lit color, also resting color
   var BASE_R=2.47;     // default dot radius (30% bigger)
-  var BASE_ALPHA=0.125; // default brightness (2x dimmer when unlit)
+  var BASE_ALPHA=0.275; // default brightness (2x dimmer when unlit)
   var HOT_ALPHA=1.45;   // brightness under the pointer / waves
-  var GLOW=!IS_MOBILE;  // skip the always-on per-dot glow pass on phones
+  var GLOW=false;       // ambient per-dot halo: doubles path work, barely visible at this dot size
 
   var t=0;
   var RING_LIFE=600;       // frames a wave lives (~10s at 60fps)
