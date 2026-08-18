@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>YOUR NAME</title>
+<title>VISIT CARD</title>
 <meta name="theme-color" content="#0A0A0C">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="icon" href="./PIC/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -50,7 +51,7 @@
   }
 
   .mark{
-    font-family:var(--mono);font-size:11px;letter-spacing:.34em;font-weight: 800;
+    font-family:var(--mono);font-size:16px;letter-spacing:.34em;font-weight: 600;
     text-transform:uppercase;color:var(--accent);margin-bottom:22px;
     display:inline-flex;align-items:center;gap:12px;
   }
@@ -66,7 +67,7 @@
     margin:0 0 28px;
     text-shadow:0 0 46px rgba(var(--accent-r),var(--accent-g),var(--accent-b),.3);
   }
-  h1 em{font-style:normal;color:var(--muted)}
+  h1 em{font-style:normal;color:var(--muted);display: block;}
 
   /* --- role badge --- */
   .tagline{
@@ -237,7 +238,7 @@
     background:linear-gradient(135deg,#12161B,#0B0D10);
   }
   .slide.on{opacity:1}
-  .slide img{width:100%;height:100%;object-fit:cover;display:block}
+  .slide img{width:100%;height:100%;object-fit:contain;display:block}
   .slide .ph{
     font-family:var(--mono);font-size:11px;color:var(--muted);
     letter-spacing:.08em;text-align:center;padding:20px;
@@ -409,7 +410,12 @@
     <div class="center">
       <div class="mark">MATVEY DEGTYARENKO</div>
 
-      <h1>3 Things that I love in work <em>Find Problems.Solve Problems.Drink Coffee</em></h1>
+      <h1>
+        <span>3 Things that I love in work</span>
+        <em>Find Problems.</em>
+        <em>Solve Problems.</em>
+        <em>Drink Coffee.</em>
+      </h1>
 
       <p class="tagline">Systems &amp; automation engineer</p>
 
@@ -418,7 +424,7 @@
       </div>
 
       <div class="row">
-        <a class="btn solid" href="https://linkedin.com/in/YOURPROFILE">LinkedIn</a>
+        <a class="btn solid" href="https://linkedin.com/in/matvey-degtyarenkoo">LinkedIn</a>
       </div>
       <div class="row">
         <button class="navbtn" data-goto="portfolio">Portfolio</button>
