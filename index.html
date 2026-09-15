@@ -30,7 +30,7 @@
     --mono:"IBM Plex Mono",ui-monospace,monospace;
   }
   *{box-sizing:border-box}
-  html{background:var(--bg);overflow-x:hidden}
+  html{background:var(--bg);overflow-x:hidden;height:100%}
   body{
     margin:0;background:var(--bg);color:var(--ink);
     font-family:var(--display);overflow-x:hidden;
@@ -207,7 +207,7 @@
   /* ---- two-view switching ---- */
   .view{display:none}
   .view.active{display:block}
-  body.on-main{overflow:hidden;height:100%}
+  html.on-main,body.on-main{overflow:hidden;height:100%}
 
   .navbtn{
     font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;
@@ -862,6 +862,7 @@
 
   function show(name){
     for(var k in views){ views[k].classList.toggle('active', k===name); }
+    document.documentElement.classList.toggle('on-main', name==='main');
     document.body.classList.toggle('on-main', name==='main');
     window.scrollTo(0,0);
     if(history.replaceState) history.replaceState(null,'','#'+name);
